@@ -1,18 +1,18 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 
 namespace HW6
 {
     class Program
     {
-
+        static string file = string.Empty;
+        const string path = "out.txt";
+        static int n = ReadFile(path);
 
         static void Main(string[] args)
         {
-            const string path = "out.txt";
-            int n = ReadFile(path);
-
             Console.WriteLine($"\nЗагруженное число n = {n}");
             Console.WriteLine($"\nВыберите действие");
             Console.WriteLine($"1 - Показать кол-во групп");
@@ -45,24 +45,27 @@ namespace HW6
 
                             tStart = TimerStart();
 
-                            int[][] groups = MakeGroups(n);
-                            string file = WriteFile(groups);
+                            MakeAndWriteGroups(n);
 
                             tStop = TimerStop(tStart);
                             Console.WriteLine($"\n\nЗатраченное время на выполение {tStop.TotalSeconds} сек");
 
                             Console.WriteLine($"\nЗаархивировать данные? (1 - да, 0 - нет)");
-                            if (int.Parse(Console.ReadLine()) == 1)
+                            int number;
+                            bool success = int.TryParse(Console.ReadLine(), out number);
+                            if (success)
                             {
-                                Archive(file);
-                            }
-                            else
-                            {
-                                break;
+                                if (number == 1)
+                                {
+                                    Archive(file);
+                                }
+                                else
+                                {
+                                    break;
+                                }
                             }
 
                             Console.Read();
-
                             break;
 
                         default:
@@ -86,61 +89,37 @@ namespace HW6
                 div /= 2;
                 groups++;
             } while (div > 1);
+
             return groups;
         }
 
-        static int[][] MakeGroups(int n)
+        static void MakeAndWriteGroups(int n)
         {
-            bool newGroup, isAdded;
-            int[][] groups = new int[0][];
+            file = "groups.txt";
 
-            for (int i = 1; i <= n; i++)
+            using (StreamWriter swrite = new StreamWriter(file))
             {
-                newGroup = false;
-
-                if (i == 1 && groups.Length < i)
+                for (int i = 1; i <= GroupsNum(n); i++)
                 {
-                    Array.Resize(ref groups, groups.Length + 1);
-                    groups[groups.Length - 1] = new int[0];
-                    Array.Resize(ref groups[groups.Length - 1], groups[groups.Length - 1].Length + 1);
-                    groups[groups.Length - 1][groups[groups.Length - 1].Length - 1] = i;
-                }
-                else
-                {
-                    for (int j = 0; j < groups.Length; j++)
-                    {
-                        isAdded = true;
-                        for (int k = 0; k < groups[j].Length; k++)
-                        {
-                            if (i % groups[j][k] == 0)
-                            {
-                                isAdded = false;
-                                break;
-                            }
-                        }
-                        if (isAdded)
-                        {
-                            Array.Resize(ref groups[j], groups[j].Length + 1);
-                            groups[j][groups[j].Length - 1] = i;
-                            break;
-                        }
-                        else if (!isAdded && j == groups.Length - 1)
-                        {
-                            newGroup = true;
-                        }
-                    }
-
-                    if (newGroup)
-                    {
-                        Array.Resize(ref groups, groups.Length + 1);
-                        groups[groups.Length - 1] = new int[0];
-                        Array.Resize(ref groups[groups.Length - 1], groups[groups.Length - 1].Length + 1);
-                        groups[groups.Length - 1][groups[groups.Length - 1].Length - 1] = i;
-                    }
+                    swrite.Write($"{i}-я группа: [{String.Join(", ", NextGroup(i, GroupsNum(n), n))}]");
+                    swrite.WriteLine("\n");
                 }
             }
-            return groups;
         }
+
+        static int[] NextGroup(int groupNumber, int groups, int number)
+        {
+            if (groupNumber != groups)
+            {
+                return Enumerable.Range((int)Math.Pow(2, groupNumber - 1), (int)Math.Pow(2, groupNumber) - (int)Math.Pow(2, groupNumber - 1)).ToArray();
+            }
+            else
+            {
+                return Enumerable.Range((int)Math.Pow(2, groupNumber - 1), number - (int)Math.Pow(2, groupNumber - 1) + 1).ToArray();
+            }
+        }
+
+        #region timer
 
         static DateTime TimerStart()
         {
@@ -153,11 +132,27 @@ namespace HW6
             TimeSpan stopwatch = DateTime.Now.Subtract(starttime);
             return stopwatch;
         }
+        #endregion
 
         static int ReadFile(string path)
         {
-            var n = File.ReadAllText(path);
-            return int.Parse(n);
+            int number;
+            int result = 0;
+
+            if (File.Exists(path))
+            {
+                var n = File.ReadAllText(path);
+                bool success = int.TryParse(n, out number);
+                if (success)
+                {
+                    result = number;
+                }
+                else
+                {
+                    Console.WriteLine("ошибка в N");
+                }
+            }
+                return result;
         }
 
         static void Archive(string sourceFile)
@@ -178,25 +173,5 @@ namespace HW6
             File.Delete(sourceFile);
             Console.WriteLine($"Файл заархивирован");
         }
-
-        static string WriteFile(int[][] groups)
-        {
-            string file = "groups.txt";
-
-            using (StreamWriter swrite = new StreamWriter(file))
-            {
-                for (int m = 0; m < groups.Length; m++)
-                {
-                    swrite.WriteLine($"Группа {m + 1}:");
-                    for (int j = 0; j < groups[m].Length; j++)
-                    {
-                        swrite.Write($"{Convert.ToString(groups[m][j])} ");
-                    }
-                    swrite.WriteLine("\n");
-                }
-            }
-            return file;
-        }
-
     }
 }
