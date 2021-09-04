@@ -7,7 +7,7 @@ namespace HW6
 {
     class Program
     {
-        static string file = string.Empty;
+        static string file = "groups.txt";
         const string path = "out.txt";
         static int n = ReadFile(path);
 
@@ -95,14 +95,12 @@ namespace HW6
 
         static void MakeAndWriteGroups(int n)
         {
-            file = "groups.txt";
 
             using (StreamWriter swrite = new StreamWriter(file))
             {
                 for (int i = 1; i <= GroupsNum(n); i++)
                 {
-                    swrite.Write($"{i}-я группа: [{String.Join(", ", NextGroup(i, GroupsNum(n), n))}]");
-                    swrite.WriteLine("\n");
+                    swrite.Write($"{i}-я группа: [{String.Join(", ", NextGroup(i, GroupsNum(n), n))}] \n");
                 }
             }
         }
